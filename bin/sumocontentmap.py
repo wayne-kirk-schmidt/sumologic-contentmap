@@ -24,10 +24,11 @@ __author__ = "Wayne Schmidt (wschmidt@sumologic.com)"
 
 ### beginning ###
 import json
-import pprint
+import csv
 import os
 import sys
 import time
+import datetime
 import argparse
 import http
 import requests
@@ -46,8 +47,8 @@ PARSER.add_argument("-e", metavar='<endpoint>', dest='MY_ENDPOINT', \
                     help="set endpoint (format: <endpoint>) ")
 PARSER.add_argument("-c", metavar='<cfg>', dest='cfgfile', \
                     help="Specify config file")
-PARSER.add_argument("-f", metavar='<fmt>', default="list", dest='oformat', \
-                    help="Specify output format (default = list )")
+PARSER.add_argument("-f", metavar='<fmt>', default="stdout", dest='oformat', \
+                    help="Specify output format (default = stdout )")
 
 ARGS = PARSER.parse_args()
 
@@ -76,8 +77,21 @@ try:
 except KeyError as myerror:
     print('Environment Variable Not Set :: {} '.format(myerror.args[0]))
 
-PP = pprint.PrettyPrinter(indent=4)
 DELAY_TIME = .2
+
+CONTENTMAP = dict()
+
+OFORMAT = ARGS.oformat
+
+CACHEDIR  = '/var/tmp'
+
+FILETAG = 'contentmap'
+
+RIGHTNOW = datetime.datetime.now()
+
+DATESTAMP = RIGHTNOW.strftime('%Y%m%d')
+
+TIMESTAMP = RIGHTNOW.strftime('%H%M%S')
 
 ### beginning ###
 
@@ -107,7 +121,46 @@ def build_details(source, parent_name, child):
         for content_child in content_list['children']:
             build_details(source, my_path_name, content_child)
 
-    print('{},{},{},{},{}'.format(my_type, uid_myself, uid_parent, my_name, my_path_name))
+    CONTENTMAP[uid_myself] = dict()
+    CONTENTMAP[uid_myself]["parent"] = uid_parent
+    CONTENTMAP[uid_myself]["myself"] = uid_myself
+    CONTENTMAP[uid_myself]["name"] = my_name
+    CONTENTMAP[uid_myself]["path"] = my_path_name
+    CONTENTMAP[uid_myself]["type"] = my_type
+
+def create_output():
+    """
+    Now construct the output we want from the CONTENTMAP data structure we made.
+    sample format is JSON or CSV ; outputs sampls might be source category, file, and stdout
+    """
+
+    if OFORMAT != "stdout":
+        outputname = '.'.join([FILETAG, DATESTAMP, TIMESTAMP, OFORMAT])
+        outputfile = os.path.join(CACHEDIR, outputname)
+
+    if OFORMAT == "stdout":
+        print('{},{},{},{},{}'.format("uid_myself", "uid_parent", "my_type", "my_name", "my_path"))
+
+    if OFORMAT == "csv":
+        csvfileobject = csv.writer(open(outputfile, "w"))
+        csvfileobject.writerow(["uid_myself", "uid_parent", "my_type", "my_name", "my_path"])
+
+    for content_item in CONTENTMAP:
+        uid_parent = CONTENTMAP[content_item]["parent"]
+        uid_myself = CONTENTMAP[content_item]["myself"]
+        my_name = CONTENTMAP[content_item]["name"]
+        my_path = CONTENTMAP[content_item]["path"]
+        my_type = CONTENTMAP[content_item]["type"]
+
+        if OFORMAT == "csv":
+            csvfileobject.writerow([uid_myself, uid_parent, my_type, my_name, my_path])
+
+        if OFORMAT == "stdout":
+            print('{},{},{},{},{}'.format(uid_myself, uid_parent, my_type, my_name, my_path))
+
+    if OFORMAT == "json":
+        with open(outputfile, 'w') as jsonfile:
+            json.dump(CONTENTMAP, jsonfile)
 
 def run_sumo_cmdlet(source):
     """
@@ -121,6 +174,8 @@ def run_sumo_cmdlet(source):
     content_list = source.get_myfolders()
     for child in content_list['children']:
         build_details(source, parent_name, child)
+
+    create_output()
 
 ### class ###
 class SumoApiClient():
