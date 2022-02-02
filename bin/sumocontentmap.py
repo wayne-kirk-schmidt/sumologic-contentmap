@@ -12,14 +12,14 @@ Style:
    http://google.github.io/styleguide/pyguide.html
 
     @name           sumocontentmap
-    @version        1.00
+    @version        2.00
     @author-name    Wayne Schmidt
     @author-email   wschmidt@sumologic.com
     @license-name   Apache 2.0
     @license-url    https://www.apache.org/licenses/LICENSE-2.0
 """
 
-__version__ = 1.00
+__version__ = 2.00
 __author__ = "Wayne Schmidt (wschmidt@sumologic.com)"
 
 ### beginning ###
@@ -49,6 +49,8 @@ PARSER.add_argument("-c", metavar='<cfg>', dest='cfgfile', \
                     help="Specify config file")
 PARSER.add_argument("-f", metavar='<fmt>', default="stdout", dest='oformat', \
                     help="Specify output format (default = stdout )")
+PARSER.add_argument("-t", metavar='<type>', default="personal", dest='foldertype', \
+                    help="Specify folder type to look for (default = personal )")
 
 ARGS = PARSER.parse_args()
 
@@ -92,6 +94,8 @@ RIGHTNOW = datetime.datetime.now()
 DATESTAMP = RIGHTNOW.strftime('%Y%m%d')
 
 TIMESTAMP = RIGHTNOW.strftime('%H%M%S')
+
+FOLDERTYPE = ARGS.foldertype.capitalize()
 
 ### beginning ###
 
@@ -167,9 +171,7 @@ def run_sumo_cmdlet(source):
     This will collect the information on object for sumologic and then collect that into a list.
     the output of the action will provide a tuple of the orgid, objecttype, and id
     """
-    contentlist = dict()
-    contentlist[SUMO_ORG] = dict()
-    parent_name = "/Personal"
+    parent_name = "/" + FOLDERTYPE
 
     content_list = source.get_myfolders()
     for child in content_list['children']:
@@ -260,6 +262,24 @@ class SumoApiClient():
         body = self.get(url).text
         results = json.loads(body)
         time.sleep(DELAY_TIME)
+        return results
+
+    def get_globalfolders(self):
+        """
+        Using an HTTP client, this uses a GET to retrieve all connection information.
+        """
+        url = "/v2/content/folders/global"
+        body = self.get(url).text
+        results = json.loads(body)
+        return results
+
+    def get_globalfolder(self, myself):
+        """
+        Using an HTTP client, this uses a GET to retrieve single connection information.
+        """
+        url = "/v2/content/folders/global/" + str(myself)
+        body = self.get(url).text
+        results = json.loads(body)
         return results
 
 ### methods ###
