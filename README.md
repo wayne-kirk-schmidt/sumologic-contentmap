@@ -71,8 +71,6 @@ To Do List:
 
 * extend to all global folders
 
-* extend output into CSV, JSON files in addition to STDOUT
-
 * incorporate support for credential managers, such as SSM
 
 * provide a lambda version of this
