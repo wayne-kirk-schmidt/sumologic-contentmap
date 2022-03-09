@@ -96,6 +96,11 @@ limitations under the License.
 Support
 =======
 
-Feel free to e-mail me with issues to: wschmidt@sumologic.com
+Feel free to e-mail me with issues to: 
+
++   wschmidt@sumologic.com
+
++   wayne.kirk.schmidt@gmail.com
+
 I will provide "best effort" fixes and extend the scripts.
 
