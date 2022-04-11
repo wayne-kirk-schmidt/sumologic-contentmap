@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-Exaplanation: sumocontent: an easy way to get all of the content in your personal folder
+Exaplanation: sumologic_show_contentmap: an easy way to show all of your content
 
 Usage:
-   $ python  sumocontent  [ options ]
+   $ python  sumologic_show_contentmap  [ options ]
 
 Style:
    Google Python Style Guide:
    http://google.github.io/styleguide/pyguide.html
 
-    @name           sumocontentmap
+    @name           sumologic_show_contentmap
     @version        2.00
     @author-name    Wayne Schmidt
     @author-email   wschmidt@sumologic.com
@@ -36,7 +36,7 @@ sys.dont_write_bytecode = 1
 
 MY_CFG = 'undefined'
 PARSER = argparse.ArgumentParser(description="""
-sumocontentmap prints out a map of all content you have in your personal folder
+sumologic_show_contentmap prints out a map of all content contained either in Personal or Global folders
 """)
 
 PARSER.add_argument("-a", metavar='<secret>', dest='MY_SECRET', \

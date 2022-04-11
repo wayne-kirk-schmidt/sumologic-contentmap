@@ -49,22 +49,26 @@ Script Names and Purposes
 The scripts are organized into sub directories:
 
     1. ./bin - has all of the scripts
-          ./bin/sumocontentmap.py
-    2. ./etc - has an example of a config file to set ENV variables for access
-    3. ./var - will contain helper materials
 
+          ./bin/sumologic_show_contentmap.py - shows everything but the dadhboardID for dashboards
+
+          ./bin/sumologic_show_dashboards.py - shows the parentID, contentID, and dashboardID
+
+    2. ./etc - has an example of a config file to set ENV variables for access
+
+    3. ./var - will contain helper materials
 
 Examples and How to Use the Scripts
 ===================================
 
     1. display help message
-          ./bin/sumocontentmap.py -h
+          ./bin/sumologic_show_contentmap.py -h
 
     2. specify the org name, and credentials
-          ./bin/sumocontentmap.py -a <API_UID>:<API_SECRET> -e <ENDPOINT> -k <SUMO_ORGID>
+          ./bin/sumologic_show_contentmap.py -a <API_UID>:<API_SECRET> -e <ENDPOINT> -k <SUMO_ORGID>
 
     3. add extra verbosity to the output
-          ./bin/sumocontentmap.py -a <API_UID>:<API_SECRET> -e <ENDPOINT> -k <SUMO_ORGID> -v <VERBOSE_LEVEL>
+          ./bin/sumologic_show_contentmap.py -a <API_UID>:<API_SECRET> -e <ENDPOINT> -k <SUMO_ORGID> -v <VERBOSE_LEVEL>
 
 To Do List:
 ===========
