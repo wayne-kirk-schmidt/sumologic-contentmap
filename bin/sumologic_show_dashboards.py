@@ -47,7 +47,7 @@ PARSER.add_argument("-e", metavar='<endpoint>', dest='MY_ENDPOINT', \
 PARSER.add_argument("-t", metavar='<type>', default="personal", dest='foldertype', \
                     help="Specify folder type to look for (default = personal )")
 
-ARGS = PARSER.parse_args()
+ARGS = PARSER.parse_args(args=None if sys.argv[1:] else ['--help'])
 
 if ARGS.MY_SECRET:
     (MY_APINAME, MY_APISECRET) = ARGS.MY_SECRET.split(':')
