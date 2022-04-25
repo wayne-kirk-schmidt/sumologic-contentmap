@@ -30,7 +30,9 @@ import sys
 import time
 import datetime
 import argparse
+import configparser
 import http
+import pandas
 import requests
 sys.dont_write_bytecode = 1
 
@@ -41,41 +43,95 @@ sumologic_show_contentmap prints out a map of all content contained either in Pe
 
 PARSER.add_argument("-a", metavar='<secret>', dest='MY_SECRET', \
                     help="set api (format: <key>:<secret>) ")
+
 PARSER.add_argument("-k", metavar='<client>', dest='MY_CLIENT', \
                     help="set key (format: <site>_<orgid>) ")
-PARSER.add_argument("-e", metavar='<endpoint>', dest='MY_ENDPOINT', \
-                    help="set endpoint (format: <endpoint>) ")
-PARSER.add_argument("-c", metavar='<cfg>', dest='cfgfile', \
+
+PARSER.add_argument("-c", metavar='<cfg>', dest='CONFIG', \
                     help="Specify config file")
+
 PARSER.add_argument("-f", metavar='<fmt>', default="stdout", dest='oformat', \
                     help="Specify output format (default = stdout )")
+
 PARSER.add_argument("-t", metavar='<type>', default="personal", dest='foldertype', \
                     help="Specify folder type to look for (default = personal )")
 
+PARSER.add_argument("-v", type=int, default=0, metavar='<verbose>', \
+                    dest='verbose', help="increase verbosity")
+
 ARGS = PARSER.parse_args(args=None if sys.argv[1:] else ['--help'])
 
-if ARGS.MY_SECRET:
-    (MY_APINAME, MY_APISECRET) = ARGS.MY_SECRET.split(':')
-    os.environ['SUMO_UID'] = MY_APINAME
-    os.environ['SUMO_KEY'] = MY_APISECRET
+def resolve_option_variables():
+    """
+    Validates and confirms all necessary variables for the script
+    """
 
-if ARGS.MY_CLIENT:
-    (MY_DEPLOYMENT, MY_ORGID) = ARGS.MY_CLIENT.split('_')
-    os.environ['SUMO_LOC'] = MY_DEPLOYMENT
-    os.environ['SUMO_ORG'] = MY_ORGID
-    os.environ['SUMO_TAG'] = ARGS.MY_CLIENT
+    if ARGS.MY_SECRET:
+        (keyname, keysecret) = ARGS.MY_SECRET.split(':')
+        os.environ['SUMO_UID'] = keyname
+        os.environ['SUMO_KEY'] = keysecret
 
-if ARGS.MY_ENDPOINT:
-    os.environ['SUMO_END'] = ARGS.MY_ENDPOINT
-else:
-    os.environ['SUMO_END'] = os.environ['SUMO_LOC']
+    if ARGS.MY_CLIENT:
+        (deployment, organizationid) = ARGS.MY_CLIENT.split('_')
+        os.environ['SUMO_LOC'] = deployment
+        os.environ['SUMO_ORG'] = organizationid
+
+def resolve_config_variables():
+    """
+    Validates and confirms all necessary variables for the script
+    """
+
+    if ARGS.CONFIG:
+        cfgfile = os.path.abspath(ARGS.CONFIG)
+        configobj = configparser.ConfigParser()
+        configobj.optionxform = str
+        configobj.read(cfgfile)
+
+        if ARGS.verbose > 8:
+            print('Displaying Config Contents:')
+            print(dict(configobj.items('Default')))
+
+        if configobj.has_option("Default", "SUMO_TAG"):
+            os.environ['SUMO_TAG'] = configobj.get("Default", "SUMO_TAG")
+
+        if configobj.has_option("Default", "SUMO_UID"):
+            os.environ['SUMO_UID'] = configobj.get("Default", "SUMO_UID")
+
+        if configobj.has_option("Default", "SUMO_KEY"):
+            os.environ['SUMO_KEY'] = configobj.get("Default", "SUMO_KEY")
+
+        if configobj.has_option("Default", "SUMO_LOC"):
+            os.environ['SUMO_LOC'] = configobj.get("Default", "SUMO_LOC")
+
+        if configobj.has_option("Default", "SUMO_END"):
+            os.environ['SUMO_END'] = configobj.get("Default", "SUMO_END")
+
+        if configobj.has_option("Default", "SUMO_ORG"):
+            os.environ['SUMO_ORG'] = configobj.get("Default", "SUMO_ORG")
+
+def initialize_variables():
+    """
+    Validates and confirms all necessary variables for the script
+    """
+
+    resolve_option_variables()
+
+    resolve_config_variables()
+
+    try:
+        my_uid = os.environ['SUMO_UID']
+        my_key = os.environ['SUMO_KEY']
+
+    except KeyError as myerror:
+        print('Environment Variable Not Set :: {} '.format(myerror.args[0]))
+
+    return my_uid, my_key
+
+( sumo_uid, sumo_key ) = initialize_variables()
 
 try:
     SUMO_UID = os.environ['SUMO_UID']
     SUMO_KEY = os.environ['SUMO_KEY']
-    SUMO_LOC = os.environ['SUMO_LOC']
-    SUMO_ORG = os.environ['SUMO_ORG']
-    SUMO_END = os.environ['SUMO_END']
 except KeyError as myerror:
     print('Environment Variable Not Set :: {} '.format(myerror.args[0]))
 
@@ -104,7 +160,8 @@ def main():
     Setup the Sumo API connection, using the required tuple of region, id, and key.
     Once done, then issue the command required
     """
-    source = SumoApiClient(SUMO_UID, SUMO_KEY, SUMO_END)
+    source = SumoApiClient(sumo_uid, sumo_key)
+
     run_sumo_cmdlet(source)
 
 def build_details(source, parent_name, child):
@@ -186,7 +243,7 @@ class SumoApiClient():
     The class includes the HTTP methods, cmdlets, and init methods
     """
 
-    def __init__(self, access_id, access_key, region, cookieFile='cookies.txt'):
+    def __init__(self, access_id, access_key, endpoint=None, cookieFile='cookies.txt'):
         """
         Initializes the Sumo Logic object
         """
@@ -194,9 +251,26 @@ class SumoApiClient():
         self.session.auth = (access_id, access_key)
         self.session.headers = {'content-type': 'application/json', \
             'accept': 'application/json'}
-        self.apipoint = 'https://api.' + region + '.sumologic.com/api'
         cookiejar = http.cookiejar.FileCookieJar(cookieFile)
         self.session.cookies = cookiejar
+        if endpoint is None:
+            self.apipoint = self._get_endpoint()
+        elif len(endpoint) < 3:
+            self.apipoint = 'https://api.' + endpoint + '.sumologic.com/api'
+        else:
+            self.apipoint = endpoint
+        if self.apipoint[-1:] == "/":
+            raise Exception("Endpoint should not end with a slash character")
+
+    def _get_endpoint(self):
+        """
+        SumoLogic REST API endpoint changes based on the geo location of the client.
+        It contacts the default REST endpoint and resolves the 401 to get the right endpoint.
+        """
+        self.endpoint = 'https://api.sumologic.com/api'
+        self.response = self.session.get('https://api.sumologic.com/api/v1/collectors')
+        endpoint = self.response.url.replace('/v1/collectors', '')
+        return endpoint
 
     def delete(self, method, params=None, headers=None, data=None):
         """
