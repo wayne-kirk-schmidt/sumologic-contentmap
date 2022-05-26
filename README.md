@@ -9,6 +9,22 @@ Armed with this, you can manage your content as you want, when you want.
 
 And, coupled with other scripts, you can publish this map into Sumo Logic as a category, so you can track your content development.
 
+Business Case
+=============
+
+Curious what was the business goals we wanted to solve?
+
+Please read on in our [writeup](doc/writeup.md)!
+
+Examples
+========
+
+![example1](doc/swaggertools1.png)
+
+![example2](doc/swaggertools2.png)
+
+![example3](doc/swaggertools3.png)
+
 Installing the Scripts
 =======================
 

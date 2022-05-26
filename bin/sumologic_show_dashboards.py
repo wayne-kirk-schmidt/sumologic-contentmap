@@ -24,7 +24,6 @@ __author__ = "Wayne Schmidt (wschmidt@sumologic.com)"
 
 ### beginning ###
 import json
-import csv
 import os
 import sys
 import time
@@ -32,7 +31,6 @@ import datetime
 import argparse
 import configparser
 import http
-import pandas
 import requests
 sys.dont_write_bytecode = 1
 
@@ -117,21 +115,15 @@ def initialize_variables():
         my_key = os.environ['SUMO_KEY']
 
     except KeyError as myerror:
-        print('Environment Variable Not Set :: {} '.format(myerror.args[0]))
+        print(f'Environment Variable Not Set :: {myerror.args[0]}')
 
     return my_uid, my_key
 
 ( sumo_uid, sumo_key ) = initialize_variables()
 
-try:
-    SUMO_UID = os.environ['SUMO_UID']
-    SUMO_KEY = os.environ['SUMO_KEY']
-except KeyError as myerror:
-    print('Environment Variable Not Set :: {} '.format(myerror.args[0]))
-
 DELAY_TIME = .2
 
-CONTENTMAP = dict()
+CONTENTMAP = {}
 
 CACHEDIR  = '/var/tmp'
 
@@ -161,7 +153,7 @@ def main():
         parent_oid = dashboard_item['folderId']
         myname = dashboard_item['title']
         dashboard_id = dashboard_item['id']
-        print('{},{},{},{}'.format(myself_oid, parent_oid, dashboard_id, myname))
+        print(f'{myself_oid},{parent_oid},{dashboard_id},{myname}')
 
 ### class ###
 class SumoApiClient():
@@ -170,7 +162,7 @@ class SumoApiClient():
     The class includes the HTTP methods, cmdlets, and init methods
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, cookieFile='cookies.txt'):
+    def __init__(self, access_id, access_key, endpoint=None, cookie_file='cookies.txt'):
         """
         Initializes the Sumo Logic object
         """
@@ -178,7 +170,7 @@ class SumoApiClient():
         self.session.auth = (access_id, access_key)
         self.session.headers = {'content-type': 'application/json', \
             'accept': 'application/json'}
-        cookiejar = http.cookiejar.FileCookieJar(cookieFile)
+        cookiejar = http.cookiejar.FileCookieJar(cookie_file)
         self.session.cookies = cookiejar
         if endpoint is None:
             self.apipoint = self._get_endpoint()

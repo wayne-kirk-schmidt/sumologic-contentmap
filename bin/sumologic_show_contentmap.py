@@ -32,7 +32,6 @@ import datetime
 import argparse
 import configparser
 import http
-import pandas
 import requests
 sys.dont_write_bytecode = 1
 
@@ -123,21 +122,15 @@ def initialize_variables():
         my_key = os.environ['SUMO_KEY']
 
     except KeyError as myerror:
-        print('Environment Variable Not Set :: {} '.format(myerror.args[0]))
+        print(f'Environment Variable Not Set :: {myerror.args[0]}')
 
     return my_uid, my_key
 
 ( sumo_uid, sumo_key ) = initialize_variables()
 
-try:
-    SUMO_UID = os.environ['SUMO_UID']
-    SUMO_KEY = os.environ['SUMO_KEY']
-except KeyError as myerror:
-    print('Environment Variable Not Set :: {} '.format(myerror.args[0]))
-
 DELAY_TIME = .2
 
-CONTENTMAP = dict()
+CONTENTMAP = {}
 
 OFORMAT = ARGS.oformat
 
@@ -182,7 +175,7 @@ def build_details(source, parent_name, child):
         for content_child in content_list['children']:
             build_details(source, my_path_name, content_child)
 
-    CONTENTMAP[uid_myself] = dict()
+    CONTENTMAP[uid_myself] = {}
     CONTENTMAP[uid_myself]["parent"] = uid_parent
     CONTENTMAP[uid_myself]["myself"] = uid_myself
     CONTENTMAP[uid_myself]["name"] = my_name
@@ -200,11 +193,11 @@ def create_output():
         outputfile = os.path.join(CACHEDIR, outputname)
 
     if OFORMAT == "stdout":
-        print('{},{},{},{},{}'.format("uid_myself", "uid_parent", "my_type", "my_name", "my_path"))
+        print('uid_myself,uid_parent,my_type,my_name,my_path')
 
     if OFORMAT == "csv":
-        csvfileobject = csv.writer(open(outputfile, "w"))
-        csvfileobject.writerow(["uid_myself", "uid_parent", "my_type", "my_name", "my_path"])
+        with csv.writer(open(outputfile, "w", encoding='utf8')) as csvfileobject:
+            csvfileobject.writerow(["uid_myself", "uid_parent", "my_type", "my_name", "my_path"])
 
     for content_item in CONTENTMAP:
         uid_parent = CONTENTMAP[content_item]["parent"]
@@ -217,10 +210,10 @@ def create_output():
             csvfileobject.writerow([uid_myself, uid_parent, my_type, my_name, my_path])
 
         if OFORMAT == "stdout":
-            print('{},{},{},{},{}'.format(uid_myself, uid_parent, my_type, my_name, my_path))
+            print(f'{uid_myself},{uid_parent},{my_type},{my_name},{my_path}')
 
     if OFORMAT == "json":
-        with open(outputfile, 'w') as jsonfile:
+        with open(outputfile, 'w', encoding='utf8') as jsonfile:
             json.dump(CONTENTMAP, jsonfile)
 
 def run_sumo_cmdlet(source):
@@ -243,7 +236,7 @@ class SumoApiClient():
     The class includes the HTTP methods, cmdlets, and init methods
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, cookieFile='cookies.txt'):
+    def __init__(self, access_id, access_key, endpoint=None, cookie_file='cookies.txt'):
         """
         Initializes the Sumo Logic object
         """
@@ -251,7 +244,7 @@ class SumoApiClient():
         self.session.auth = (access_id, access_key)
         self.session.headers = {'content-type': 'application/json', \
             'accept': 'application/json'}
-        cookiejar = http.cookiejar.FileCookieJar(cookieFile)
+        cookiejar = http.cookiejar.FileCookieJar(cookie_file)
         self.session.cookies = cookiejar
         if endpoint is None:
             self.apipoint = self._get_endpoint()
