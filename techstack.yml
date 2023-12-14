@@ -1,8 +1,8 @@
 repo_name: wayne-kirk-schmidt/sumologic-contentmap
-report_id: c3eaac6c68e101d16bdfb611fddf39aa
+report_id: cceaf3258f538b1d186ec585ae4263a3
 repo_type: Public
-timestamp: '2023-11-10T02:27:45+00:00'
-requested_by: wks-sumo-logic
+timestamp: '2023-12-14T10:06:12+00:00'
+requested_by: wayne-kirk-schmidt
 provider: github
 branch: main
 detected_tools_count: 2
